@@ -1,5 +1,4 @@
 --[[
-
 =====================================================================
 ==================== READ THIS BEFORE CONTINUING ====================
 =====================================================================
@@ -89,6 +88,9 @@ P.S. You can delete this when you're done too. It's your config now! :)
 --  NOTE: Must happen before plugins are loaded (otherwise wrong leader will be used)
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
+
+-- Shortcut to set the environment on Windows for C++ compilation, which requires the use
+-- of the variables available in the Visual Studio Developer Command Prompt
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = false
@@ -615,6 +617,10 @@ require('lazy').setup({
       vim.list_extend(ensure_installed, {
         'stylua', -- Used to format Lua code
         'clang-format',
+        'cmakelang',
+        'cmakelint',
+        -- 'cpptools',
+        'codelldb',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -661,6 +667,8 @@ require('lazy').setup({
       formatters_by_ft = {
         lua = { 'stylua' },
         cpp = { 'clang-format' },
+        cmake = { { 'cmake_format' } },
+        CMake = { { 'cmake_format' } },
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
         --
@@ -885,7 +893,7 @@ require('lazy').setup({
     'nvim-treesitter/nvim-treesitter',
     build = ':TSUpdate',
     opts = {
-      ensure_installed = { 'bash', 'c', 'cpp', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'vim', 'vimdoc' },
+      ensure_installed = { 'bash', 'c', 'cpp', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'vim', 'vimdoc', 'cmake' },
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
@@ -902,6 +910,7 @@ require('lazy').setup({
 
       -- Prefer git instead of curl in order to improve connectivity in some environments
       require('nvim-treesitter.install').prefer_git = true
+
       ---@diagnostic disable-next-line: missing-fields
       require('nvim-treesitter.configs').setup(opts)
 
@@ -922,6 +931,60 @@ require('lazy').setup({
     },
     config = function()
       require('nvim-tree').setup {}
+    end,
+  },
+  {
+    'github/copilot.vim',
+  },
+  {
+    'Civitasv/cmake-tools.nvim',
+    --VS style keybindings
+    keys = {
+      { '<F5>', '<cmd> CMakeRun <CR>', { noremap = true, silent = true, desc = 'Run the current target' } },
+    },
+    config = function()
+      require('cmake-tools').setup {}
+    end,
+  },
+  {
+    'mfussenegger/nvim-dap',
+    keys = {
+      { '<leader>db', '<cmd> DapToggleBreakpoint <CR>', { noremap = true, silent = true, desc = 'Add breakpoint at line' } },
+      { '<leader>dr', '<cmd> DapContinue <CR>', { noremap = true, silent = true, desc = 'Start or Continue the debugger' } },
+    },
+  },
+  {
+    'jay-babu/mason-nvim-dap.nvim',
+    event = 'VeryLazy',
+    dependencies = {
+      'williamboman/mason.nvim',
+      'mfussenegger/nvim-dap',
+    },
+    opts = {
+      handlers = {},
+      ensure_installed = {
+        -- 'cpptools',
+        'codelldb',
+      },
+    },
+  },
+  {
+    'rcarriga/nvim-dap-ui',
+    dependencies = { 'mfussenegger/nvim-dap', 'nvim-neotest/nvim-nio' },
+    event = 'VeryLazy',
+    config = function()
+      local dap = require 'dap'
+      local dapui = require 'dapui'
+      dapui.setup()
+      dap.listeners.after.event_initialized['dapui_config'] = function()
+        dapui.open()
+      end
+      dap.listeners.before.event_terminated['dapui_config'] = function()
+        dapui.close()
+      end
+      dap.listeners.before.event_exited['dapui_config'] = function()
+        dapui.close()
+      end
     end,
   },
 
