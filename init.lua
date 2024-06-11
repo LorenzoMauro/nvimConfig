@@ -337,7 +337,7 @@ require('lazy').setup({
       -- The easiest way to use Telescope, is to start by doing something like:
       --  :Telescope help_tags
       --
-      -- After running this command, a window will open up and you're able to
+      -- After running this command, a window will open up and you're able toreadability
       -- type in the prompt window. You'll see a list of `help_tags` options and
       -- a corresponding preview of the help.
       --
@@ -384,6 +384,14 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
       vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
       vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
+      --find all references
+      vim.keymap.set('n', '<leader>fr', function()
+        require('telescope.builtin').lsp_references { layout_strategy = 'horizontal' }
+      end, { desc = '[F]ind [R]eferences' })
+      --search for symbols
+      vim.keymap.set('n', '<leader>fs', function()
+        require('telescope.builtin').lsp_dynamic_workspace_symbols { layout_strategy = 'horizontal' }
+      end, { desc = '[F]ind [S]ymbols' })
 
       -- Slightly advanced example of overriding default behavior and theme
       vim.keymap.set('n', '<leader>/', function()
@@ -510,6 +518,8 @@ require('lazy').setup({
           --  For example, in C this would take you to the header.
           map('gD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
 
+          -- Switch between header and source files in C/C++ projects (:ClangdSwitchSourceHeader)
+          map('<leader>fh', ':ClangdSwitchSourceHeader<CR>', '[F]ind [H]eader')
           -- The following two autocommands are used to highlight references of the
           -- word under your cursor when your cursor rests there for a little while.
           --    See `:help CursorHold` for information about when this is executed
@@ -619,7 +629,6 @@ require('lazy').setup({
         'clang-format',
         'cmakelang',
         'cmakelint',
-        -- 'cpptools',
         'codelldb',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
@@ -937,21 +946,158 @@ require('lazy').setup({
     'github/copilot.vim',
   },
   {
-    'Civitasv/cmake-tools.nvim',
-    --VS style keybindings
-    keys = {
-      { '<F5>', '<cmd> CMakeRun <CR>', { noremap = true, silent = true, desc = 'Run the current target' } },
-    },
-    config = function()
-      require('cmake-tools').setup {}
-    end,
-  },
-  {
     'mfussenegger/nvim-dap',
     keys = {
       { '<leader>db', '<cmd> DapToggleBreakpoint <CR>', { noremap = true, silent = true, desc = 'Add breakpoint at line' } },
       { '<leader>dr', '<cmd> DapContinue <CR>', { noremap = true, silent = true, desc = 'Start or Continue the debugger' } },
     },
+  },
+  {
+    'stevearc/overseer.nvim',
+  },
+  { 'akinsho/toggleterm.nvim', version = '*', config = true },
+  {
+    'Civitasv/cmake-tools.nvim',
+    dependencies = {
+      'mfussenegger/nvim-dap',
+    },
+    config = function()
+      local osys = require 'cmake-tools.osys'
+      require('cmake-tools').setup {
+        cmake_command = 'cmake', -- this is used to specify cmake command path
+        ctest_command = 'ctest', -- this is used to specify ctest command path
+        cmake_use_preset = true,
+        cmake_regenerate_on_save = true, -- auto generate when save CMakeLists.txt
+        cmake_generate_options = { '-DCMAKE_EXPORT_COMPILE_COMMANDS=1' }, -- this will be passed when invoke `CMakeGenerate`
+        cmake_build_options = {}, -- this will be passed when invoke `CMakeBuild`
+        -- support macro expansion:
+        --       ${kit}
+        --       ${kitGenerator}
+        --       ${variant:xx}
+        cmake_build_directory = function()
+          if osys.iswin32 then
+            return 'out\\${variant:buildType}'
+          end
+          return 'out/${variant:buildType}'
+        end, -- this is used to specify generate directory for cmake, allows macro expansion, can be a string or a function returning the string, relative to cwd.
+        cmake_soft_link_compile_commands = true, -- this will automatically make a soft link from compile commands file to project root dir
+        cmake_compile_commands_from_lsp = false, -- this will automatically set compile commands file location using lsp, to use it, please set `cmake_soft_link_compile_commands` to false
+        cmake_kits_path = nil, -- this is used to specify global cmake kits path, see CMakeKits for detailed usage
+        cmake_variants_message = {
+          short = { show = true }, -- whether to show short message
+          long = { show = true, max_length = 40 }, -- whether to show long message
+        },
+        cmake_dap_configuration = { -- debug settings for cmake
+          name = 'cpp',
+          type = 'codelldb',
+          request = 'launch',
+          stopOnEntry = false,
+          runInTerminal = true,
+          console = 'integratedTerminal',
+        },
+        cmake_executor = { -- executor to use
+          name = 'toggleterm', -- name of the executor
+          opts = {}, -- the options the executor will get, possible values depend on the executor type. See `default_opts` for possible values.
+          default_opts = { -- a list of default and possible values for executors
+            quickfix = {
+              show = 'always', -- "always", "only_on_error"
+              position = 'belowright', -- "vertical", "horizontal", "leftabove", "aboveleft", "rightbelow", "belowright", "topleft", "botright", use `:h vertical` for example to see help on them
+              size = 10,
+              encoding = 'utf-8', -- if encoding is not "utf-8", it will be converted to "utf-8" using `vim.fn.iconv`
+              auto_close_when_success = true, -- typically, you can use it with the "always" option; it will auto-close the quickfix buffer if the execution is successful.
+            },
+            toggleterm = {
+              direction = 'tab', -- 'vertical' | 'horizontal' | 'tab' | 'float'
+              close_on_exit = false, -- whether close the terminal when exit
+              auto_scroll = true, -- whether auto scroll to the bottom
+              singleton = true, -- single instance, autocloses the opened one, if present
+            },
+            overseer = {
+              new_task_opts = {
+                strategy = {
+                  'toggleterm',
+                  direction = 'horizontal',
+                  autos_croll = true,
+                  quit_on_exit = 'success',
+                },
+              }, -- options to pass into the `overseer.new_task` command
+              on_new_task = function(task)
+                require('overseer').open { enter = false, direction = 'right' }
+              end, -- a function that gets overseer.Task when it is created, before calling `task:start`
+            },
+            terminal = {
+              name = 'Main Terminal',
+              prefix_name = '[CMakeTools]: ', -- This must be included and must be unique, otherwise the terminals will not work. Do not use a simple spacebar " ", or any generic name
+              split_direction = 'horizontal', -- "horizontal", "vertical"
+              split_size = 11,
+
+              -- Window handling
+              single_terminal_per_instance = true, -- Single viewport, multiple windows
+              single_terminal_per_tab = true, -- Single viewport per tab
+              keep_terminal_static_location = true, -- Static location of the viewport if avialable
+
+              -- Running Tasks
+              start_insert = false, -- If you want to enter terminal with :startinsert upon using :CMakeRun
+              focus = false, -- Focus on terminal when cmake task is launched.
+              do_not_add_newline = false, -- Do not hit enter on the command inserted when using :CMakeRun, allowing a chance to review or modify the command before hitting enter.
+            }, -- terminal executor uses the values in cmake_terminal
+          },
+        },
+        cmake_runner = { -- runner to use
+          name = 'toggleterm', -- name of the runner
+          opts = {}, -- the options the runner will get, possible values depend on the runner type. See `default_opts` for possible values.
+          default_opts = { -- a list of default and possible values for runners
+            quickfix = {
+              show = 'always', -- "always", "only_on_error"
+              position = 'belowright', -- "bottom", "top"
+              size = 10,
+              encoding = 'utf-8',
+              auto_close_when_success = true, -- typically, you can use it with the "always" option; it will auto-close the quickfix buffer if the execution is successful.
+            },
+            toggleterm = {
+              direction = 'tab', -- 'vertical' | 'horizontal' | 'tab' | 'float'
+              close_on_exit = false, -- whether close the terminal when exit
+              auto_scroll = true, -- whether auto scroll to the bottom
+              singleton = true, -- single instance, autocloses the opened one, if present
+            },
+            overseer = {
+              new_task_opts = {
+                strategy = {
+                  'toggleterm',
+                  direction = 'horizontal',
+                  autos_croll = true,
+                  quit_on_exit = 'success',
+                },
+              }, -- options to pass into the `overseer.new_task` command
+              on_new_task = function(task) end, -- a function that gets overseer.Task when it is created, before calling `task:start`
+            },
+            terminal = {
+              name = 'Main Terminal',
+              prefix_name = '[CMakeTools]: ', -- This must be included and must be unique, otherwise the terminals will not work. Do not use a simple spacebar " ", or any generic name
+              split_direction = 'horizontal', -- "horizontal", "vertical"
+              split_size = 11,
+
+              -- Window handling
+              single_terminal_per_instance = true, -- Single viewport, multiple windows
+              single_terminal_per_tab = true, -- Single viewport per tab
+              keep_terminal_static_location = true, -- Static location of the viewport if avialable
+
+              -- Running Tasks
+              start_insert = false, -- If you want to enter terminal with :startinsert upon using :CMakeRun
+              focus = false, -- Focus on terminal when cmake task is launched.
+              do_not_add_newline = false, -- Do not hit enter on the command inserted when using :CMakeRun, allowing a chance to review or modify the command before hitting enter.
+            },
+          },
+        },
+        cmake_notifications = {
+          runner = { enabled = true },
+          executor = { enabled = true },
+          spinner = { '⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏' }, -- icons used for progress display
+          refresh_rate_ms = 100, -- how often to iterate icons
+        },
+        cmake_virtual_text_support = true, -- Show the target related to current file using virtual text (at right corner)
+      }
+    end,
   },
   {
     'jay-babu/mason-nvim-dap.nvim',
@@ -963,7 +1109,6 @@ require('lazy').setup({
     opts = {
       handlers = {},
       ensure_installed = {
-        -- 'cpptools',
         'codelldb',
       },
     },
@@ -987,7 +1132,104 @@ require('lazy').setup({
       end
     end,
   },
+  {
+    'rmagatti/auto-session',
+    config = function()
+      require('auto-session').setup {
+        log_level = 'error',
+        auto_session_suppress_dirs = {},
 
+        pre_save_cmds = {
+          function()
+            local status_ok, api = pcall(require, 'nvim-tree.api')
+            if not status_ok then
+              return
+            end
+            api.tree.close()
+          end,
+        },
+
+        post_save_cmds = {
+          function()
+            local status_ok, api = pcall(require, 'nvim-tree.api')
+            if not status_ok then
+              return
+            end
+            api.tree.toggle { focus = false, find_file = true }
+          end,
+        },
+
+        post_restore_cmds = {
+          function()
+            local status_ok, api = pcall(require, 'nvim-tree.api')
+            if not status_ok then
+              return
+            end
+            api.tree.toggle { focus = false, find_file = true }
+          end,
+        },
+      }
+    end,
+  },
+  {
+    'kevinhwang91/nvim-ufo',
+    dependencies = { 'kevinhwang91/promise-async' },
+    config = function()
+      vim.o.foldcolumn = '1' -- '0' is not bad
+      vim.o.foldlevel = 99 -- Using ufo provider need a large value, feel free to decrease the value
+      vim.o.foldlevelstart = 99
+      vim.o.foldenable = true
+
+      -- Using ufo provider need remap `zR` and `zM`. If Neovim is 0.6.1, remap yourself
+      vim.keymap.set('n', 'zR', require('ufo').openAllFolds)
+      vim.keymap.set('n', 'zM', require('ufo').closeAllFolds)
+
+      -- Option 1: coc.nvim as LSP client
+      -- use { 'neoclide/coc.nvim', branch = 'master', run = 'yarn install --frozen-lockfile' }
+      -- require('ufo').setup()
+      --
+
+      -- Option 2: nvim lsp as LSP client
+      -- Tell the server the capability of foldingRange,
+      -- Neovim hasn't added foldingRange to default capabilities, users must add it manually
+      local capabilities = vim.lsp.protocol.make_client_capabilities()
+      capabilities.textDocument.foldingRange = {
+        dynamicRegistration = false,
+        lineFoldingOnly = true,
+      }
+      local language_servers = require('lspconfig').util.available_servers() -- or list servers manually like {'gopls', 'clangd'}
+      for _, ls in ipairs(language_servers) do
+        require('lspconfig')[ls].setup {
+          capabilities = capabilities,
+          -- you can add other fields for setting up lsp server in this table
+        }
+      end
+      require('ufo').setup()
+      --
+
+      -- Option 3: treesitter as a main provider instead
+      -- (Note: the `nvim-treesitter` plugin is *not* needed.)
+      -- ufo uses the same query files for folding (queries/<lang>/folds.scm)
+      -- performance and stability are better than `foldmethod=nvim_treesitter#foldexpr()`
+      -- require('ufo').setup {
+      --   provider_selector = function(bufnr, filetype, buftype)
+      --     return { 'treesitter', 'indent' }
+      --   end,
+      -- }
+      --
+
+      -- Option 4: disable all providers for all buffers
+      -- Not recommend, AFAIK, the ufo's providers are the best performance in Neovim
+      -- require('ufo').setup {
+      --   provider_selector = function(bufnr, filetype, buftype)
+      --     return ''
+      --   end,
+      -- }
+    end,
+  },
+
+  { 'lukas-reineke/indent-blankline.nvim', main = 'ibl', opts = {} },
+  { 'tpope/vim-fugitive' },
   -- The following two comments only work if you have downloaded the kickstart repo, not just copy pasted the
   -- init.lua. If you want these files, they are in the repository, so you can just download them and
   -- place them in the correct locations.
@@ -1000,7 +1242,7 @@ require('lazy').setup({
   -- require 'kickstart.plugins.debug',
   -- require 'kickstart.plugins.indent_line',
   -- require 'kickstart.plugins.lint',
-  -- require 'kickstart.plugins.autopairs',
+  require 'kickstart.plugins.autopairs',
   -- require 'kickstart.plugins.neo-tree',
   -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
@@ -1031,6 +1273,13 @@ require('lazy').setup({
     },
   },
 })
+
+-- vim.api.nvim_create_autocmd('VimEnter', {
+--   callback = function(data)
+--     local api = require 'nvim-tree.api'
+--     api.tree.open()
+--   end,
+-- })
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
