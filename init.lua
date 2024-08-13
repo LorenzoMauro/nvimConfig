@@ -93,7 +93,7 @@ vim.g.maplocalleader = ' '
 -- of the variables available in the Visual Studio Developer Command Prompt
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
 -- See `:help vim.opt`
@@ -152,6 +152,7 @@ vim.opt.inccommand = 'split'
 
 -- Show which line your cursor is on
 vim.opt.cursorline = true
+-- vim.opt.winbl = 10
 
 -- Minimal number of screen lines to keep above and below the cursor.
 vim.opt.scrolloff = 10
@@ -594,7 +595,7 @@ require('lazy').setup({
         --    https://github.com/pmizio/typescript-tools.nvim
         --
         -- But for many setups, the LSP (`tsserver`) will work just fine
-        -- tsserver = {},
+        tsserver = {},
         --
 
         lua_ls = {
@@ -810,7 +811,7 @@ require('lazy').setup({
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
       -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      --vim.cmd.colorscheme 'tokyonight-night'
+      -- vim.cmd.colorscheme 'tokyonight-night'
 
       -- You can configure highlights by doing something like:
       --vim.cmd.hi 'Comment gui=none'
@@ -849,13 +850,46 @@ require('lazy').setup({
         palette_overrides = {},
         overrides = {},
         dim_inactive = false,
-        transparent_mode = false,
+        transparent_mode = true,
       }
 
       -- You can configure highlights by doing something like:
       vim.cmd.hi 'Comment gui=none'
+      vim.cmd [[
+        highlight Normal guibg=none
+        highlight NonText guibg=none
+        highlight Normal ctermbg=none
+        highlight NonText ctermbg=none
+      ]]
     end,
     --    opts = ...
+  },
+
+  {
+    'RRethy/base16-nvim',
+    -- init = function()
+    --   -- Load the colorscheme here.
+    --   -- Like many other themes, this one has different styles, and you could load
+    --   -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
+    --   require('base16-colorscheme').setup {
+    --     base00 = '#16161D',
+    --     base01 = '#2c313c',
+    --     base02 = '#3e4451',
+    --     base03 = '#6c7891',
+    --     base04 = '#565c64',
+    --     base05 = '#abb2bf',
+    --     base06 = '#9a9bb3',
+    --     base07 = '#c5c8e6',
+    --     base08 = '#e06c75',
+    --     base09 = '#d19a66',
+    --     base0A = '#e5c07b',
+    --     base0B = '#98c379',
+    --     base0C = '#56b6c2',
+    --     base0D = '#0184bc',
+    --     base0E = '#c678dd',
+    --     base0F = '#a06949',
+    --   }
+    -- end,
   },
 
   -- Highlight todo, notes, etc in comments
@@ -1283,3 +1317,71 @@ require('lazy').setup({
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
+--
+GruvBoxActivate = function()
+  -- Load the colorscheme here.
+  -- Like many other themes, this one has different styles, and you could load
+  -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
+  vim.o.background = 'dark'
+  vim.cmd.colorscheme 'gruvbox'
+  require('gruvbox').setup {
+    terminal_colors = true, -- add neovim terminal colors
+    undercurl = true,
+    underline = true,
+    bold = true,
+    italic = {
+      strings = true,
+      emphasis = true,
+      comments = true,
+      operators = false,
+      folds = true,
+    },
+    strikethrough = true,
+    invert_selection = false,
+    invert_signs = false,
+    invert_tabline = false,
+    invert_intend_guides = false,
+    inverse = true, -- invert background for search, diffs, statuslines and errors
+    contrast = 'hard', -- can be "hard", "soft" or empty string
+    palette_overrides = {},
+    overrides = {},
+    dim_inactive = false,
+    transparent_mode = true,
+  }
+
+  -- You can configure highlights by doing something like:
+  vim.cmd.hi 'Comment gui=none'
+  vim.cmd [[
+        highlight Normal guibg=none
+        highlight NonText guibg=none
+        highlight Normal ctermbg=none
+        highlight NonText ctermbg=none
+      ]]
+end
+
+CustomColorPaletteActivet = function()
+  require 'mycolorscheme'
+  CustomColorSchemeActivate()
+end
+
+TokyoNightActivate = function()
+  -- Load the colorscheme here.
+  -- Like many other themes, this one has different styles, and you could load
+  -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
+  vim.cmd.colorscheme 'tokyonight-night'
+
+  -- You can configure highlights by doing something like:
+  vim.cmd.hi 'Comment gui=none'
+  vim.cmd [[
+        highlight Normal guibg=none
+        highlight NonText guibg=none
+        highlight Normal ctermbg=none
+        highlight NonText ctermbg=none
+      ]]
+end
+
+-- make some shortcuts to switch between color schemes
+
+vim.api.nvim_set_keymap('n', '<leader>1', ':lua GruvBoxActivate()<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<leader>2', ':lua CustomColorPaletteActivet()<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<leader>3', ':lua TokyoNightActivate()<CR>', { noremap = true, silent = true })
