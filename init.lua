@@ -1007,7 +1007,7 @@ require('lazy').setup({
               auto_close_when_success = true, -- typically, you can use it with the "always" option; it will auto-close the quickfix buffer if the execution is successful.
             },
             toggleterm = {
-              direction = 'tab', -- 'vertical' | 'horizontal' | 'tab' | 'float'
+              direction = 'vertical', -- 'vertical' | 'horizontal' | 'tab' | 'float'
               close_on_exit = false, -- whether close the terminal when exit
               auto_scroll = true, -- whether auto scroll to the bottom
               singleton = true, -- single instance, autocloses the opened one, if present
@@ -1055,7 +1055,7 @@ require('lazy').setup({
               auto_close_when_success = true, -- typically, you can use it with the "always" option; it will auto-close the quickfix buffer if the execution is successful.
             },
             toggleterm = {
-              direction = 'tab', -- 'vertical' | 'horizontal' | 'tab' | 'float'
+              direction = 'vertical', -- 'vertical' | 'horizontal' | 'tab' | 'float'
               close_on_exit = false, -- whether close the terminal when exit
               auto_scroll = true, -- whether auto scroll to the bottom
               singleton = true, -- single instance, autocloses the opened one, if present
@@ -1230,6 +1230,26 @@ require('lazy').setup({
 
   { 'lukas-reineke/indent-blankline.nvim', main = 'ibl', opts = {} },
   { 'tpope/vim-fugitive' },
+
+  -- {
+  --   'ray-x/navigator.lua',
+  --   dependencies = {
+  --     { 'ray-x/guihua.lua', run = 'cd lua/fzy && make' },
+  --     { 'neovim/nvim-lspconfig' },
+  --   },
+  --   config = function()
+  --     require('navigator').setup {
+  --       mason = true,
+  --       lsp = { disable_lsp = { 'clangd' } },
+  --     }
+  --   end,
+  -- },
+  -- {
+  --   'simrat39/symbols-outline.nvim',
+  --   config = function()
+  --     require('symbols-outline').setup {}
+  --   end,
+  -- },
   -- The following two comments only work if you have downloaded the kickstart repo, not just copy pasted the
   -- init.lua. If you want these files, they are in the repository, so you can just download them and
   -- place them in the correct locations.
@@ -1273,6 +1293,13 @@ require('lazy').setup({
     },
   },
 })
+-- set columncolor to 160 automatically
+vim.api.nvim_exec(
+  [[
+autocmd BufRead,BufNewFile *.h,*.cpp,*.cu set colorcolumn=160
+]],
+  false
+)
 
 -- vim.api.nvim_create_autocmd('VimEnter', {
 --   callback = function(data)
