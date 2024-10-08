@@ -637,7 +637,7 @@ require('lazy').setup({
           cmd = { 'slangd' },
           filetypes = { 'slang', 'hlsl', 'shaderslang' },
           root_dir = function(fname)
-            return lspconfig_util.find_git_ancestor(fname) or vim.fn.getcwd()
+            return require('lspconfig').util.find_git_ancestor(fname) or vim.fn.getcwd()
           end,
           capabilities = capabilities,
           single_file_support = true,
@@ -648,6 +648,7 @@ require('lazy').setup({
                 deducedTypes = true,
                 parameterNames = true,
               },
+              searchInAllWorkspaceDirectories = true,
             },
           },
         },
